@@ -6,7 +6,10 @@ const NavLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, 
   useEffect(() => {
     const checkActive = () => {
       const currentHash = window.location.hash || '#/';
-      setIsActive(currentHash === href);
+      // Handle simple and complex routes (e.g., #/blog and #/blog/post-slug)
+      const baseHref = href.split('/')[0];
+      const currentBase = currentHash.split('/')[0];
+      setIsActive(currentHash === href || (baseHref.length > 2 && currentBase === baseHref));
     };
     checkActive();
     window.addEventListener('hashchange', checkActive);
@@ -29,7 +32,9 @@ const MobileNavLink: React.FC<{ href: string; children: React.ReactNode; onClick
   useEffect(() => {
     const checkActive = () => {
       const currentHash = window.location.hash || '#/';
-      setIsActive(currentHash === href);
+       const baseHref = href.split('/')[0];
+      const currentBase = currentHash.split('/')[0];
+      setIsActive(currentHash === href || (baseHref.length > 2 && currentBase === baseHref));
     };
     checkActive();
     window.addEventListener('hashchange', checkActive);
@@ -47,8 +52,12 @@ const MobileNavLink: React.FC<{ href: string; children: React.ReactNode; onClick
   );
 };
 
+interface HeaderProps {
+  isLoggedIn: boolean;
+  onLogout: () => void;
+}
 
-const Header: React.FC = () => {
+const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -83,7 +92,14 @@ const Header: React.FC = () => {
               {navLinks.map(link => (
                 <NavLink key={link.href} href={link.href}>{link.label}</NavLink>
               ))}
-              <a href="#/dashboard" className="ml-4 px-4 py-2 border border-electric-blue text-electric-blue rounded-full text-sm font-medium hover:bg-electric-blue hover:text-black transition duration-300">Artist Dashboard</a>
+              {isLoggedIn ? (
+                <>
+                  <a href="#/dashboard" className="ml-4 px-4 py-2 border border-electric-blue text-electric-blue rounded-full text-sm font-medium hover:bg-electric-blue hover:text-black transition duration-300">Dashboard</a>
+                  <button onClick={onLogout} className="ml-4 px-4 py-2 border border-neon-purple text-neon-purple rounded-full text-sm font-medium hover:bg-neon-purple hover:text-black transition duration-300">Logout</button>
+                </>
+              ) : (
+                <a href="#/login" className="ml-4 px-4 py-2 border border-electric-blue text-electric-blue rounded-full text-sm font-medium hover:bg-electric-blue hover:text-black transition duration-300">Artist Login</a>
+              )}
             </div>
           </div>
           <div className="-mr-2 flex md:hidden">
@@ -115,7 +131,14 @@ const Header: React.FC = () => {
             {navLinks.map(link => (
               <MobileNavLink key={link.href} href={link.href} onClick={() => setIsOpen(false)}>{link.label}</MobileNavLink>
             ))}
-            <MobileNavLink href="#/dashboard" onClick={() => setIsOpen(false)}>Artist Dashboard</MobileNavLink>
+             {isLoggedIn ? (
+                <>
+                  <MobileNavLink href="#/dashboard" onClick={() => setIsOpen(false)}>Dashboard</MobileNavLink>
+                  <a onClick={() => { onLogout(); setIsOpen(false); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Logout</a>
+                </>
+              ) : (
+                <MobileNavLink href="#/login" onClick={() => setIsOpen(false)}>Artist Login</MobileNavLink>
+              )}
           </div>
         </div>
       )}

@@ -1,0 +1,58 @@
+export const blogData = [
+    {
+        id: 1,
+        slug: 'from-podcast-to-powerhouse-story-of-tsa-records',
+        title: 'From Podcast to Powerhouse: The Story of TSA Records',
+        href: '#/blog/from-podcast-to-powerhouse-story-of-tsa-records',
+        description: 'It started with a mic and a mission: to showcase unseen talent. Learn how the Talent Showcase Africa Podcast on Nam Radio grew into a record label dedicated to championing emerging African artists.',
+        content: `
+            <p>In the heart of Namibia, a simple idea sparked a movement. It wasn't about contracts or viral hits, not at first. It was about giving a voice to the voiceless. The Talent Showcase Africa radio show, broadcast from the studios of Nam Radio, became a beacon for artists who had the talent but lacked the platform.</p>
+            <p class="mt-4">Week after week, we featured incredible musicians from across the continent. We heard the raw power of Namibian hip-hop, the soulful melodies of Zimbabwean singers, and the infectious energy of Ghanaian drill. The response was overwhelming. Listeners and artists alike asked for more. They didn't just want to be heard on the radio; they wanted to be heard on Spotify, Apple Music, and stages around the world.</p>
+            <p class="mt-4">That's when we knew we had to evolve. The podcast had built the community, but a record label could build the careers. <strong>Talent Showcase Africa (TSA) Records</strong> was born from this grassroots movement. We are not just a label; we are an extension of that original mission. We are here to develop, support, and amplify the next generation of African musical superstars on the world stage, all while staying true to the authentic sounds of the continent.</p>
+        `,
+        imageUrl: 'https://picsum.photos/seed/podcast-mic/600/400',
+        date: 'Nov 5, 2023',
+        datetime: '2023-11-05',
+        category: { title: 'Our Story', href: '#' },
+        author: { name: 'TSA Records', imageUrl: 'https://picsum.photos/seed/tsa-logo/32/32' },
+    },
+    {
+        id: 2,
+        slug: 'the-rise-of-amapiano',
+        title: 'The Rise of Amapiano: How SA Beats Conquered the World',
+        href: '#/blog/the-rise-of-amapiano',
+        description: 'From Pretoria to global dancefloors. We break down the log drum, the dance styles, and how TSA artists are taking the Amapiano sound to new heights.',
+        content: '<p>The log drum hits, and the world listens. Amapiano is more than a genre; it\'s a cultural phenomenon. We dive deep into its origins and explore how our artists are innovating within this incredible soundscape.</p>',
+        imageUrl: 'https://picsum.photos/seed/amapiano/600/400',
+        date: 'Oct 20, 2023',
+        datetime: '2023-10-20',
+        category: { title: 'Culture', href: '#' },
+        author: { name: 'DJ Tunde', imageUrl: 'https://picsum.photos/seed/tunde/32/32' },
+    },
+     {
+        id: 3,
+        slug: 'artist-spotlight-ras-sheehama',
+        title: 'Artist Spotlight: The Enduring Legacy of Ras Sheehama',
+        href: '#/blog/artist-spotlight-ras-sheehama',
+        description: 'We celebrate the journey of Namibian reggae icon Ras Sheehama. His music has been the soundtrack of a nation, and his story is one of resilience, power, and timeless rhythm.',
+        content: '<p>A true legend of Namibian music, Ras Sheehama\'s voice has carried messages of hope and struggle for decades. We look back at his incredible career and his impact on the African music scene.</p>',
+        imageUrl: 'https://picsum.photos/seed/ras-sheehama/600/400',
+        date: 'Oct 15, 2023',
+        datetime: '2023-10-15',
+        category: { title: 'Success Story', href: '#' },
+        author: { name: 'Folake Adebayo', imageUrl: 'https://picsum.photos/seed/folake/32/32' },
+    },
+    {
+        id: 4,
+        slug: 'tiktok-dance-challenges-afrobeats',
+        title: 'TikTok Dance Challenges: The Secret to Your Next Afrobeats Hit',
+        href: '#/blog/tiktok-dance-challenges-afrobeats',
+        description: 'It\'s more than just a dance. Learn how to craft a viral moment around your music and partner with the right creators to make your track blow up on TikTok and Reels.',
+        content: '<p>In today\'s music economy, a 15-second clip can change an artist\'s life. We provide a step-by-step guide on how to leverage platforms like TikTok to create a viral moment for your music.</p>',
+        imageUrl: 'https://picsum.photos/seed/afro-dance/600/400',
+        date: 'Oct 5, 2023',
+        datetime: '2023-10-05',
+        category: { title: 'Marketing', href: '#' },
+        author: { name: 'Samuel Chen', imageUrl: 'https://picsum.photos/seed/samuel/32/32' },
+    },
+];
