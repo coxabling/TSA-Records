@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from './LoginPage';
 
 // This helps TypeScript understand the global Recharts object from the CDN
@@ -40,13 +40,34 @@ const regionalData = [
 const COLORS = ['#8A2BE2', '#00BFFF', '#32CD32', '#FFD700', '#FF4500'];
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
+  const [rechartsLoaded, setRechartsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Check if Recharts is already available
+    if (window.Recharts) {
+      setRechartsLoaded(true);
+      return;
+    }
+
+    // If not, poll for it. This handles the async script loading from the CDN.
+    const intervalId = setInterval(() => {
+      if (window.Recharts) {
+        setRechartsLoaded(true);
+        clearInterval(intervalId);
+      }
+    }, 100); // Check every 100ms
+
+    // Cleanup function to clear the interval if the component unmounts
+    return () => clearInterval(intervalId);
+  }, []);
+
   // Gracefully handle the case where the Recharts CDN script hasn't loaded yet.
-  if (typeof window.Recharts === 'undefined') {
+  if (!rechartsLoaded) {
     return (
       <div className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
             <h1 className="text-2xl font-bold text-white">Loading Analytics...</h1>
-            <p className="mt-4 text-lg text-gray-400">The charting library is loading. If it doesn't appear, please refresh the page.</p>
+            <p className="mt-4 text-lg text-gray-400">Preparing your performance dashboard.</p>
         </div>
       </div>
     );
