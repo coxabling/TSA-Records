@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { User } from './LoginPage';
 
 // This helps TypeScript understand the global Recharts object from the CDN
@@ -40,29 +41,36 @@ const regionalData = [
 const COLORS = ['#8A2BE2', '#00BFFF', '#32CD32', '#FFD700', '#FF4500'];
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
-  const [rechartsLoaded, setRechartsLoaded] = useState(false);
+  const [rechartsStatus, setRechartsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
-    // Check if Recharts is already available
     if (window.Recharts) {
-      setRechartsLoaded(true);
+      setRechartsStatus('ready');
       return;
     }
 
-    // If not, poll for it. This handles the async script loading from the CDN.
+    let attempts = 0;
     const intervalId = setInterval(() => {
+      attempts++;
       if (window.Recharts) {
-        setRechartsLoaded(true);
+        setRechartsStatus('ready');
+        clearInterval(intervalId);
+      } else if (attempts > 50) { // 5 seconds timeout
+        setRechartsStatus('error');
         clearInterval(intervalId);
       }
-    }, 100); // Check every 100ms
+    }, 100);
 
-    // Cleanup function to clear the interval if the component unmounts
     return () => clearInterval(intervalId);
   }, []);
+  
+  const [activeIndex, setActiveIndex] = useState(0);
+  const onPieEnter = useCallback((_: any, index: number) => {
+    setActiveIndex(index);
+  }, [setActiveIndex]);
 
-  // Gracefully handle the case where the Recharts CDN script hasn't loaded yet.
-  if (!rechartsLoaded) {
+
+  if (rechartsStatus === 'loading') {
     return (
       <div className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
@@ -72,10 +80,66 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
       </div>
     );
   }
-
-  // Now that we've confirmed Recharts exists, we can safely destructure its components.
-  const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
   
+  if (rechartsStatus === 'error') {
+     return (
+      <div className="py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <h1 className="text-2xl font-bold text-red-500">Error Loading Analytics</h1>
+            <p className="mt-4 text-lg text-gray-400">Could not load the charting library. Please check your network connection and refresh the page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Sector } = window.Recharts;
+  
+  const RoundedBar = (props: any) => {
+      const { fill, x, y, width, height } = props;
+      return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} />;
+  };
+  
+  const renderActiveShape = (props: any) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 10) * cos;
+    const sy = cy + (outerRadius + 10) * sin;
+    const mx = cx + (outerRadius + 30) * cos;
+    const my = cy + (outerRadius + 30) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+
+    return (
+        <g>
+            <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="font-bold text-lg">
+                {payload.name}
+            </text>
+            <Sector
+                cx={cx}
+                cy={cy}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                fill={fill}
+            />
+            <Sector
+                cx={cx}
+                cy={cy}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                innerRadius={outerRadius + 6}
+                outerRadius={outerRadius + 10}
+                fill={fill}
+            />
+        </g>
+    );
+  };
+
+
   return (
     <div className="py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -108,14 +172,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
           <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
             <h2 className="text-xl font-semibold text-white mb-4">Streams Over Time</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={streamsData}>
+              <AreaChart data={streamsData}>
+                <defs>
+                    <linearGradient id="colorStreams" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8A2BE2" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8A2BE2" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
                 <XAxis dataKey="name" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
                 <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                <Legend />
-                <Line type="monotone" dataKey="streams" stroke="#8A2BE2" strokeWidth={2} activeDot={{ r: 8 }} />
-              </LineChart>
+                <Area type="monotone" dataKey="streams" stroke="#8A2BE2" strokeWidth={2} fillOpacity={1} fill="url(#colorStreams)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 
@@ -126,9 +195,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
                 <BarChart data={topTracksData} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
                     <XAxis type="number" stroke="#9CA3AF" />
-                    <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={80} tick={{ fontSize: 12 }} />
+                    <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={80} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} cursor={{fill: 'rgba(0, 191, 255, 0.1)'}} />
-                    <Bar dataKey="streams" fill="#00BFFF" />
+                    <Bar dataKey="streams" fill="#00BFFF" shape={<RoundedBar />} />
                 </BarChart>
             </ResponsiveContainer>
           </div>
@@ -138,13 +207,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
             <h2 className="text-xl font-semibold text-white mb-4 text-center">Regional Popularity</h2>
              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
-                    <Pie data={regionalData} cx="50%" cy="50%" labelLine={false} outerRadius={120} fill="#8884d8" dataKey="value" nameKey="name" label={(entry) => entry.name}>
+                    <Pie 
+                        activeIndex={activeIndex}
+                        activeShape={renderActiveShape}
+                        data={regionalData} 
+                        cx="50%" 
+                        cy="50%" 
+                        innerRadius={80}
+                        outerRadius={110} 
+                        fill="#8884d8" 
+                        dataKey="value" 
+                        onMouseEnter={onPieEnter}
+                        >
                          {regionalData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                          ))}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                    <Legend />
                 </PieChart>
             </ResponsiveContainer>
           </div>
