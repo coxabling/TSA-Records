@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -10,12 +11,14 @@ import BlogPostPage from './pages/BlogPostPage';
 import LoginPage, { UserCredentials, User } from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ContactPage from './pages/ContactPage';
+import RadioPluggingPage from './pages/RadioPluggingPage';
+import TikTokGrowthPage from './pages/TikTokGrowthPage';
+import ArtistLaunchPage from './pages/ArtistLaunchPage';
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Check for a logged-in user in localStorage on initial load
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('tsa-currentUser');
@@ -82,18 +85,17 @@ const App: React.FC = () => {
   };
 
   const renderPage = () => {
-    const [path, param] = route.substring(2).split('/'); // Example: #/blog/my-slug -> ['blog', 'my-slug']
+    const [path, param] = route.substring(2).split('/');
 
     if (path === 'dashboard') {
       if (currentUser) {
         return <DashboardPage user={currentUser} />;
       }
-      // If not logged in, redirect to login
       window.location.hash = '#/login';
-      return null; // Render nothing while redirecting
+      return null;
     }
     
-    if (path === 'login' || path === 'dashboard') {
+    if (path === 'login') {
          if (currentUser) {
             window.location.hash = '#/dashboard';
             return null;
@@ -111,6 +113,9 @@ const App: React.FC = () => {
       case '#/pricing': return <PricingPage />;
       case '#/blog': return <BlogPage />;
       case '#/contact': return <ContactPage />;
+      case '#/radio-plugging': return <RadioPluggingPage user={currentUser} />;
+      case '#/tiktok-growth': return <TikTokGrowthPage user={currentUser} />;
+      case '#/artist-launch': return <ArtistLaunchPage user={currentUser} />;
       case '#/':
       default: return <HomePage />;
     }

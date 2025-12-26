@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User } from './LoginPage';
 
-// This helps TypeScript understand the global Recharts object from the CDN
 declare global {
   interface Window {
     Recharts: any;
@@ -13,37 +12,32 @@ interface DashboardPageProps {
   user: User;
 }
 
-const streamsData = [
-  { name: 'Jan', streams: 4000 },
-  { name: 'Feb', streams: 3000 },
-  { name: 'Mar', streams: 5000 },
-  { name: 'Apr', streams: 4500 },
-  { name: 'May', streams: 6000 },
-  { name: 'Jun', streams: 5800 },
-  { name: 'Jul', streams: 7200 },
-];
-
-const topTracksData = [
-  { name: 'Vibe Check', streams: 45000 },
-  { name: 'Lagos Sun', streams: 38000 },
-  { name: 'Amapiano Love', streams: 32000 },
-  { name: 'Jozi Night', streams: 25000 },
-  { name: 'Accra Groove', streams: 18000 },
-];
-
-const regionalData = [
-  { name: 'Nigeria', value: 400 },
-  { name: 'South Africa', value: 300 },
-  { name: 'Ghana', value: 200 },
-  { name: 'Kenya', value: 150 },
-  { name: 'Diaspora', value: 250 },
-];
-const COLORS = ['#8A2BE2', '#00BFFF', '#32CD32', '#FFD700', '#FF4500'];
+interface Campaign {
+    songTitle: string;
+    tier: string;
+    status: string;
+    date: string;
+    regions?: string[];
+    type: 'Radio' | 'TikTok' | 'LaunchPage';
+}
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
   const [rechartsStatus, setRechartsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [activeProjects, setActiveProjects] = useState<Campaign[]>([]);
 
   useEffect(() => {
+    // Collect all project types from local storage
+    const radio = JSON.parse(localStorage.getItem('tsa-campaigns') || '[]')
+      .filter((c: any) => c.userEmail === user.email).map((c: any) => ({ ...c, type: 'Radio' }));
+    
+    const tiktok = JSON.parse(localStorage.getItem('tsa-tiktok-orders') || '[]')
+      .filter((c: any) => c.userEmail === user.email).map((c: any) => ({ ...c, type: 'TikTok' }));
+
+    const launch = JSON.parse(localStorage.getItem('tsa-artist-pages') || '[]')
+      .filter((c: any) => c.userEmail === user.email).map((c: any) => ({ ...c, type: 'LaunchPage', songTitle: 'Artist Portfolio' }));
+
+    setActiveProjects([...radio, ...tiktok, ...launch]);
+
     if (window.Recharts) {
       setRechartsStatus('ready');
       return;
@@ -55,178 +49,103 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
       if (window.Recharts) {
         setRechartsStatus('ready');
         clearInterval(intervalId);
-      } else if (attempts > 50) { // 5 seconds timeout
+      } else if (attempts > 50) {
         setRechartsStatus('error');
         clearInterval(intervalId);
       }
     }, 100);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [user.email]);
   
-  const [activeIndex, setActiveIndex] = useState(0);
-  const onPieEnter = useCallback((_: any, index: number) => {
-    setActiveIndex(index);
-  }, [setActiveIndex]);
-
-
   if (rechartsStatus === 'loading') {
-    return (
-      <div className="py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-            <h1 className="text-2xl font-bold text-white">Loading Analytics...</h1>
-            <p className="mt-4 text-lg text-gray-400">Preparing your performance dashboard.</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (rechartsStatus === 'error') {
-     return (
-      <div className="py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-            <h1 className="text-2xl font-bold text-red-500">Error Loading Analytics</h1>
-            <p className="mt-4 text-lg text-gray-400">Could not load the charting library. Please check your network connection and refresh the page.</p>
-        </div>
-      </div>
-    );
+    return <div className="py-24 text-center text-white">Loading Performance Stats...</div>;
   }
 
-  const { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Sector } = window.Recharts;
-  
-  const RoundedBar = (props: any) => {
-      const { fill, x, y, width, height } = props;
-      return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} />;
-  };
-  
-  const renderActiveShape = (props: any) => {
-    const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 10) * cos;
-    const sy = cy + (outerRadius + 10) * sin;
-    const mx = cx + (outerRadius + 30) * cos;
-    const my = cy + (outerRadius + 30) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-    const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
-
-    return (
-        <g>
-            <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="font-bold text-lg">
-                {payload.name}
-            </text>
-            <Sector
-                cx={cx}
-                cy={cy}
-                innerRadius={innerRadius}
-                outerRadius={outerRadius}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                fill={fill}
-            />
-            <Sector
-                cx={cx}
-                cy={cy}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                innerRadius={outerRadius + 6}
-                outerRadius={outerRadius + 10}
-                fill={fill}
-            />
-        </g>
-    );
-  };
-
+  const { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts;
 
   return (
     <div className="py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <h1 className="text-4xl font-bold tracking-tight text-white">
-          Welcome back, <span className="text-neon-purple">{user.artistName}</span>!
-        </h1>
-        <p className="mt-4 text-lg text-gray-400">Here's a look at how your music is performing.</p>
-
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Total Streams (All Time)</h3>
-                <p className="mt-2 text-3xl font-bold text-white">1.2M</p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1 className="text-4xl font-bold tracking-tight text-white">
+                Artist Hub: <span className="text-neon-purple">{user.artistName}</span>
+                </h1>
+                <p className="mt-2 text-lg text-gray-400">Manage your growth tools and distribution analytics.</p>
             </div>
-            <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Monthly Listeners</h3>
-                <p className="mt-2 text-3xl font-bold text-electric-blue">89.4K</p>
-            </div>
-             <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Royalties (This Month)</h3>
-                <p className="mt-2 text-3xl font-bold text-white">$1,450</p>
-            </div>
-             <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-                <h3 className="text-sm font-medium text-gray-400">Playlist Adds</h3>
-                <p className="mt-2 text-3xl font-bold text-neon-purple">32</p>
+            <div className="flex gap-3">
+                <a href="#/radio-plugging" className="px-4 py-2 bg-gray-900 border border-gray-800 text-white rounded-lg text-sm hover:border-neon-purple transition-all">Plug Radio</a>
+                <a href="#/tiktok-growth" className="px-4 py-2 bg-gray-900 border border-gray-800 text-white rounded-lg text-sm hover:border-neon-purple transition-all">TikTok Growth</a>
+                <a href="#/artist-launch" className="px-4 py-2 bg-neon-purple text-white rounded-lg text-sm font-bold hover:scale-105 transition-all">Launch Page</a>
             </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Streams Over Time */}
-          <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-            <h2 className="text-xl font-semibold text-white mb-4">Streams Over Time</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={streamsData}>
-                <defs>
-                    <linearGradient id="colorStreams" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8A2BE2" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8A2BE2" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
-                <XAxis dataKey="name" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                <Area type="monotone" dataKey="streams" stroke="#8A2BE2" strokeWidth={2} fillOpacity={1} fill="url(#colorStreams)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Unified Projects Table */}
+        <div className="mt-12 bg-gray-900/40 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm">
+            <h2 className="text-xl font-bold text-white mb-6">Active Projects</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase">
+                            <th className="pb-4">Type</th>
+                            <th className="pb-4">Project</th>
+                            <th className="pb-4">Package</th>
+                            <th className="pb-4">Status</th>
+                            <th className="pb-4">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody className="text-gray-300">
+                        {activeProjects.length === 0 ? (
+                            <tr><td colSpan={5} className="py-8 text-center text-gray-600 italic">No active projects. Start growing your sound!</td></tr>
+                        ) : activeProjects.map((proj, idx) => (
+                            <tr key={idx} className="border-b border-gray-800/50 hover:bg-white/5 transition-colors text-sm">
+                                <td className="py-4">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${proj.type === 'Radio' ? 'bg-blue-500/20 text-blue-400' : proj.type === 'TikTok' ? 'bg-pink-500/20 text-pink-400' : 'bg-green-500/20 text-green-400'}`}>
+                                        {proj.type}
+                                    </span>
+                                </td>
+                                <td className="py-4 font-semibold text-white">{proj.songTitle}</td>
+                                <td className="py-4 capitalize">{proj.tier}</td>
+                                <td className="py-4">
+                                    <span className="flex items-center">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 mr-2 animate-pulse"></span>
+                                        {proj.status}
+                                    </span>
+                                </td>
+                                <td className="py-4 text-gray-500">{new Date(proj.date).toLocaleDateString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-          {/* Top Tracks */}
-          <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800">
-            <h2 className="text-xl font-semibold text-white mb-4">Top Tracks</h2>
-             <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topTracksData} layout="vertical" margin={{ left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
-                    <XAxis type="number" stroke="#9CA3AF" />
-                    <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={80} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} cursor={{fill: 'rgba(0, 191, 255, 0.1)'}} />
-                    <Bar dataKey="streams" fill="#00BFFF" shape={<RoundedBar />} />
-                </BarChart>
-            </ResponsiveContainer>
-          </div>
-          
-           {/* Regional Popularity */}
-          <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-800 lg:col-span-2">
-            <h2 className="text-xl font-semibold text-white mb-4 text-center">Regional Popularity</h2>
-             <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                    <Pie 
-                        activeIndex={activeIndex}
-                        activeShape={renderActiveShape}
-                        data={regionalData} 
-                        cx="50%" 
-                        cy="50%" 
-                        innerRadius={80}
-                        outerRadius={110} 
-                        fill="#8884d8" 
-                        dataKey="value" 
-                        onMouseEnter={onPieEnter}
-                        >
-                         {regionalData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                         ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                </PieChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Analytics Section - Simplified for this update */}
+        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-gray-900/30 p-6 rounded-2xl border border-gray-800">
+                <h3 className="text-lg font-bold text-white mb-6">Audience Growth</h3>
+                <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart data={[{n:'W1', s:100}, {n:'W2', s:250}, {n:'W3', s:800}, {n:'W4', s:1200}]}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <XAxis dataKey="n" stroke="#666" />
+                        <Tooltip contentStyle={{backgroundColor:'#000', border:'none'}} />
+                        <Area type="monotone" dataKey="s" stroke="#8A2BE2" fill="#8A2BE2" fillOpacity={0.2} />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+            <div className="bg-gray-900/30 p-6 rounded-2xl border border-gray-800 flex flex-col justify-center">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-black/40 rounded-xl">
+                        <span className="text-xs text-gray-500 block">TIKTOK USAGE</span>
+                        <span className="text-2xl font-bold text-white">4.2K</span>
+                    </div>
+                    <div className="p-4 bg-black/40 rounded-xl">
+                        <span className="text-xs text-gray-500 block">RADIO REACH</span>
+                        <span className="text-2xl font-bold text-white">120K</span>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>

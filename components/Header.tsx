@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 const NavLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => {
@@ -6,7 +7,6 @@ const NavLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, 
   useEffect(() => {
     const checkActive = () => {
       const currentHash = window.location.hash || '#/';
-      // Handle simple and complex routes (e.g., #/blog and #/blog/post-slug)
       const baseHref = href.split('/')[0];
       const currentBase = currentHash.split('/')[0];
       setIsActive(currentHash === href || (baseHref.length > 2 && currentBase === baseHref));
@@ -73,6 +73,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
     { href: '#/', label: 'Home' },
     { href: '#/about', label: 'About' },
     { href: '#/services', label: 'Services' },
+    { href: '#/radio-plugging', label: 'Radio Plugging' },
     { href: '#/pricing', label: 'Pricing' },
     { href: '#/blog', label: 'Blog' },
     { href: '#/contact', label: 'Contact' },
@@ -134,7 +135,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
              {isLoggedIn ? (
                 <>
                   <MobileNavLink href="#/dashboard" onClick={() => setIsOpen(false)}>Dashboard</MobileNavLink>
-                  <a onClick={() => { onLogout(); setIsOpen(false); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Logout</a>
+                  <a onClick={() => { onLogout(); setIsOpen(false); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer">Logout</a>
                 </>
               ) : (
                 <MobileNavLink href="#/login" onClick={() => setIsOpen(false)}>Artist Login</MobileNavLink>
