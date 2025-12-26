@@ -3,6 +3,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
+// Fix for Recharts UMD: Expose React and ReactDOM globally so the library can find them
+(window as any).React = React;
+(window as any).ReactDOM = ReactDOM;
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
