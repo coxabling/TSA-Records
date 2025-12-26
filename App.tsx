@@ -14,6 +14,13 @@ import ContactPage from './pages/ContactPage';
 import RadioPluggingPage from './pages/RadioPluggingPage';
 import TikTokGrowthPage from './pages/TikTokGrowthPage';
 import ArtistLaunchPage from './pages/ArtistLaunchPage';
+import RadioDistributionPage from './pages/RadioDistributionPage';
+import PlaylistNetworkPage from './pages/PlaylistNetworkPage';
+import AIRadioPage from './pages/AIRadioPage';
+import EPKPage from './pages/EPKPage';
+import CommunityPage from './pages/CommunityPage';
+import SyncPage from './pages/SyncPage';
+import AcceleratorPage from './pages/AcceleratorPage';
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
@@ -116,13 +123,20 @@ const App: React.FC = () => {
       case '#/radio-plugging': return <RadioPluggingPage user={currentUser} />;
       case '#/tiktok-growth': return <TikTokGrowthPage user={currentUser} />;
       case '#/artist-launch': return <ArtistLaunchPage user={currentUser} />;
+      case '#/radio-distribution': return <RadioDistributionPage user={currentUser} />;
+      case '#/playlists': return <PlaylistNetworkPage user={currentUser} />;
+      case '#/ai-radio': return <AIRadioPage />;
+      case '#/epk-service': return <EPKPage user={currentUser} />;
+      case '#/community': return <CommunityPage user={currentUser} />;
+      case '#/sync-hub': return <SyncPage user={currentUser} />;
+      case '#/accelerator': return <AcceleratorPage user={currentUser} />;
       case '#/':
       default: return <HomePage />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-brand-bg font-sans">
+    <div className="min-h-screen flex flex-col bg-brand-bg font-sans text-white">
       <Header isLoggedIn={!!currentUser} onLogout={handleLogout} />
       <main className="flex-grow">
         {renderPage()}
