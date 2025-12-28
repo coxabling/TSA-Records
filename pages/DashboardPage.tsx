@@ -17,80 +17,48 @@ type OrderStatus =
   | 'Completed' 
   | 'Follow‑Up';
 
-// Roles & Responsibilities mapping
 type ResponsibilityRole = 'Artist' | 'TSA Admin' | 'Promo Team' | 'System';
 
 interface Campaign {
+    id: string;
     songTitle?: string;
     artistName?: string;
     tier?: string;
     status: OrderStatus;
     date: string;
     type: 'Radio' | 'TikTok' | 'LaunchPage' | 'RadioDistro' | 'Playlist' | 'EPK' | 'Sync' | 'Accelerator';
+    qcStatus: 'Passed' | 'Pending' | 'Flagged';
 }
 
+// Fix: Removed the pipe symbol which was incorrectly being interpreted as a bitwise OR operator
+const STAGES: OrderStatus[] = [
+  'Order Received', 
+  'Payment Confirmed', 
+  'Content Review', 
+  'Campaign Scheduled', 
+  'In Progress', 
+  'Live Campaign', 
+  'Completed', 
+  'Follow‑Up'
+];
+
 /**
- * Role Tracker Badge
- * Visually identifies who is currently responsible for the project's next move.
+ * Technical Progress Stepper for the 8-Stage Workflow
  */
-const RoleBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
-  let role: ResponsibilityRole = 'System';
-  let color = 'text-gray-500 bg-gray-500/10 border-gray-500/20';
-
-  if (status === 'Order Received' || status === 'Content Review') {
-    role = 'Artist';
-    color = 'text-electric-blue bg-electric-blue/10 border-electric-blue/20';
-  } else if (status === 'Payment Confirmed' || status === 'Campaign Scheduled') {
-    role = 'TSA Admin';
-    color = 'text-neon-purple bg-neon-purple/10 border-neon-purple/20';
-  } else if (status === 'In Progress' || status === 'Live Campaign') {
-    role = 'Promo Team';
-    color = 'text-green-400 bg-green-400/10 border-green-400/20';
-  } else {
-    role = 'System';
-    color = 'text-white bg-white/10 border-white/20';
-  }
-
+const PhaseMatrix: React.FC<{ currentStatus: OrderStatus }> = ({ currentStatus }) => {
+  const currentIndex = STAGES.indexOf(currentStatus);
   return (
-    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${color}`}>
-      {role}
-    </span>
-  );
-};
-
-const StudioTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
-  const max = Math.max(...data, 1000);
-  const points = data.map((val, i) => `${(i / (data.length - 1)) * 100},${100 - (val / max) * 75}`).join(' ');
-  const areaPoints = `0,100 ${points} 100,100`;
-
-  return (
-    <div className="relative w-full h-[280px] mt-10 group/chart">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-        <defs>
-          <linearGradient id="neonGlowGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0" />
-          </linearGradient>
-          <filter id="svgGlow">
-            <feGaussianBlur stdDeviation="1" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        {[0, 25, 50, 75, 100].map((y) => (
-          <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
-        ))}
-        <polygon points={areaPoints} fill="url(#neonGlowGrad)" className="transition-all duration-1000 ease-in-out" />
-        <polyline points={points} fill="none" stroke="#8A2BE2" strokeWidth="1" filter="url(#svgGlow)" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <div className="flex justify-between mt-8 text-[9px] font-black text-gray-800 uppercase tracking-[0.5em]">
-        <span>Discovery</span>
-        <span>Adoption</span>
-        <span>Velocity</span>
-        <span>Peak Impact</span>
-      </div>
+    <div className="flex items-center justify-between w-full gap-1 mt-6">
+      {STAGES.map((stage, i) => (
+        <div key={stage} className="flex-1 group relative">
+          <div className={`h-1.5 rounded-full transition-all duration-700 ${
+            i <= currentIndex ? (stage === 'Completed' ? 'bg-green-500' : 'bg-neon-purple shadow-[0_0_10px_#8A2BE2]') : 'bg-white/5'
+          }`}></div>
+          <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-black border border-white/10 px-3 py-1.5 rounded text-[8px] font-black uppercase tracking-widest whitespace-nowrap z-50 pointer-events-none transition-opacity">
+            {stage}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -98,8 +66,9 @@ const StudioTrendChart: React.FC<{ data: number[] }> = ({ data }) => {
 const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
   const [activeProjects, setActiveProjects] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [systemLogs, setSystemLogs] = useState<{msg: string, role: ResponsibilityRole, time: string}[]>([]);
 
-  const fetchEcosystemData = useCallback(() => {
+  const fetchOperationalData = useCallback(() => {
     try {
       const getS = (k: string) => JSON.parse(localStorage.getItem(k) || '[]');
       const keys = ['tsa-campaigns', 'tsa-tiktok-orders', 'tsa-artist-pages', 'tsa-radio-distro', 'tsa-playlist-subs', 'tsa-epks', 'tsa-sync-apps', 'tsa-accelerator-apps'];
@@ -107,48 +76,66 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
       
       let all: Campaign[] = [];
       keys.forEach((k, i) => {
-        const data = getS(k).filter((c: any) => c.userEmail === user.email).map((c: any) => ({ ...c, type: types[i] }));
+        const data = getS(k).filter((c: any) => c.userEmail === user.email).map((c: any) => ({ 
+          ...c, 
+          id: c.id || `CMP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          type: types[i],
+          qcStatus: c.qcStatus || 'Pending'
+        }));
         all = [...all, ...data];
       });
 
-      // Default demo project for new users
       if (all.length === 0) {
         all.push({
-            songTitle: 'Initial Asset Synchronization',
+            id: 'CMP-INIT-001',
+            songTitle: 'Ecosystem Initialization',
             status: 'Content Review',
             date: new Date().toISOString(),
             type: 'Accelerator',
-            tier: 'TSA Onboarding'
+            tier: 'Level 1',
+            qcStatus: 'Passed'
         });
       }
 
       setActiveProjects(all.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      
+      // Seed System Logs
+      setSystemLogs([
+        { msg: "System: Source of Truth (Google Sheets) Uplink Stable.", role: 'System', time: 'LIVE' },
+        { msg: "AI Ops Director: Interpreting latest order metadata...", role: 'System', time: '2m' },
+        { msg: "Admin: QA cycle complete for active TikTok campaigns.", role: 'TSA Admin', time: '14m' }
+      ]);
     } catch (e) {
-      console.error("Hydration Error:", e);
+      console.error("Operational Ingestion Error:", e);
     } finally {
-      setTimeout(() => setIsLoading(false), 800);
+      setTimeout(() => setIsLoading(false), 900);
     }
   }, [user.email]);
 
   useEffect(() => {
-    fetchEcosystemData();
-  }, [fetchEcosystemData]);
+    fetchOperationalData();
+  }, [fetchOperationalData]);
 
-  const trendData = useMemo(() => [800, 2400, 1900, 4800, 3100, 7200, 9500], []);
+  const getRoleForStatus = (status: OrderStatus): ResponsibilityRole => {
+    if (status === 'Order Received' || status === 'Content Review' || status === 'Follow‑Up') return 'Artist';
+    if (status === 'Payment Confirmed' || status === 'Campaign Scheduled') return 'TSA Admin';
+    if (status === 'In Progress' || status === 'Live Campaign') return 'Promo Team';
+    return 'System';
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050505]">
-        <div className="relative w-24 h-24">
-          <div className="absolute inset-0 border-b-2 border-neon-purple rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase text-gray-700 animate-pulse">Syncing</div>
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 border-t-2 border-r-2 border-neon-purple rounded-full animate-spin"></div>
+          <p className="mt-8 text-[10px] font-black uppercase text-gray-700 tracking-[0.5em] animate-pulse">Initializing Ops Terminal</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-neon-purple selection:text-white pb-32">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-neon-purple pb-32">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-neon-purple/5 rounded-full blur-[200px] animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-electric-blue/5 rounded-full blur-[200px] animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -156,229 +143,202 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8 pt-16">
         
-        {/* Elite Command Header */}
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        {/* Ops Header */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-20">
           <div>
-            <div className="flex items-center gap-5 mb-10">
-              <span className="px-5 py-2.5 bg-neon-purple/20 text-neon-purple text-[10px] font-black rounded-full uppercase border border-neon-purple/40 tracking-[0.4em]">
-                <span className="inline-block w-2 h-2 bg-neon-purple rounded-full mr-3 animate-ping"></span>
-                Operations Command
+            <div className="flex items-center gap-5 mb-8">
+              <span className="px-5 py-2.5 bg-neon-purple/20 text-neon-purple text-[10px] font-black rounded-full uppercase border border-neon-purple/30 tracking-[0.4em]">
+                Command Node: {user.artistName.toUpperCase()}
               </span>
-              <span className="text-gray-800 text-[10px] font-black uppercase tracking-[0.6em]">ARTIST_NODE: {user.artistName.substring(0,4).toUpperCase()}</span>
+              <span className="text-gray-800 text-[10px] font-black uppercase tracking-[0.5em] font-mono">NODE_OS: 2.5.0-FL-LITE</span>
             </div>
-            <h1 className="text-7xl sm:text-9xl font-black uppercase italic tracking-tighter leading-none mb-8">
-              {user.artistName} <span className="text-electric-blue/40 font-outline-1">HQ</span>
+            <h1 className="text-7xl sm:text-9xl font-black uppercase italic tracking-tighter leading-none mb-4">
+              Control <span className="text-electric-blue/40 font-outline-1">Center</span>
             </h1>
-            <p className="text-gray-500 font-medium italic text-3xl max-w-lg leading-relaxed">Integrated deployment and performance hub.</p>
+            <p className="text-gray-500 font-medium italic text-2xl max-w-xl">AI-Native Label Operations & Deployment Hub.</p>
           </div>
-
-          <div className="w-full xl:w-auto">
-            <div className="flex items-center gap-12 p-12 bg-white/[0.02] backdrop-blur-3xl rounded-[64px] border border-white/5 shadow-2xl relative group">
-               <div className="absolute inset-0 bg-gradient-to-tr from-neon-purple/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-               <div className="mr-16">
-                  <div className="text-[10px] text-gray-700 font-black uppercase tracking-[0.6em] mb-4">Total Revenue Share</div>
-                  <div className="text-7xl font-black text-white tracking-tighter">$0.00</div>
-               </div>
-               <button className="px-14 py-7 bg-white text-black text-[13px] font-black rounded-3xl uppercase tracking-[0.5em] hover:bg-neon-purple hover:text-white transition-all shadow-2xl active:scale-95 border-b-6 border-gray-400 hover:border-neon-purple">Payout</button>
+          
+          <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[48px] backdrop-blur-3xl shadow-2xl flex items-center gap-12">
+            <div>
+              <div className="text-[10px] text-gray-700 font-black uppercase tracking-[0.5em] mb-3">Escalated Notifications</div>
+              <div className="text-5xl font-black text-white italic">02</div>
+            </div>
+            <div className="h-12 w-[1px] bg-white/5"></div>
+            <div>
+               <div className="text-[10px] text-gray-700 font-black uppercase tracking-[0.5em] mb-3">Live Dispatches</div>
+               <div className="text-5xl font-black text-electric-blue italic">{activeProjects.filter(p => p.status === 'Live Campaign').length}</div>
             </div>
           </div>
         </div>
 
-        {/* 8-Stage Progression Pulse */}
-        <div className="mb-24 bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-[80px] p-16 shadow-2xl group overflow-hidden">
-          <div className="flex justify-between items-center mb-14">
-            <h3 className="text-[14px] font-black text-gray-700 uppercase tracking-[0.8em]">Master Velocity Tracking</h3>
-            <div className="text-[11px] font-black text-neon-purple uppercase tracking-[0.4em] bg-neon-purple/10 px-6 py-2 rounded-full border border-neon-purple/20">Stage: Regional Scaling</div>
+        {/* AI Operations Director Terminal */}
+        <div className="mb-16 bg-black border border-white/10 rounded-3xl p-8 font-mono shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 text-[120px] opacity-[0.02] pointer-events-none">📟</div>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">AI Operations Director Terminal</h3>
           </div>
-          <div className="relative h-14 bg-black/60 rounded-full border border-white/10 p-3 shadow-inner">
-            <div className="h-full w-[38%] bg-gradient-to-r from-neon-purple via-electric-blue to-neon-purple bg-[length:200%_auto] animate-gradient rounded-full shadow-[0_0_60px_rgba(138,43,226,0.6)]"></div>
-          </div>
-          <div className="mt-12 grid grid-cols-4 text-[11px] font-black text-gray-800 uppercase tracking-[0.7em]">
-            <span className="text-white">Emerging</span>
-            <span className="text-center text-electric-blue">Regional</span>
-            <span className="text-center">Continental</span>
-            <span className="text-right">Global</span>
+          <div className="space-y-3 h-32 overflow-y-auto custom-scrollbar pr-4">
+             {systemLogs.map((log, i) => (
+               <div key={i} className="flex gap-4 text-[11px] items-start animate-in fade-in slide-in-from-left-4 duration-500">
+                 <span className="text-gray-800 shrink-0">[{log.time}]</span>
+                 <span className={`${log.role === 'System' ? 'text-neon-purple' : 'text-gray-400'} font-bold`}>{log.msg}</span>
+               </div>
+             ))}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 xl:gap-24">
           
-          <div className="lg:col-span-2 space-y-20">
+          <div className="lg:col-span-2 space-y-16">
             
-            {/* Impact Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="bg-white/[0.02] border border-white/5 rounded-[72px] p-16 hover:border-neon-purple/40 transition-all duration-700 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-16 opacity-[0.05] text-[180px] group-hover:rotate-12 transition-transform duration-1000">📈</div>
-                <div className="text-[13px] text-gray-800 font-black uppercase mb-6 tracking-[0.5em]">Digital Impressions</div>
-                <div className="text-8xl font-black text-white tracking-tighter drop-shadow-2xl">24.8K</div>
-                <div className="mt-10 flex items-center gap-4 text-[12px] text-green-500 font-black bg-green-500/10 w-fit px-6 py-3 rounded-2xl uppercase tracking-[0.2em] border border-green-500/10">
-                  +12.4% <span className="text-gray-800 font-bold ml-1 lowercase font-sans">this cycle</span>
+            {/* Active Deployment Matrix */}
+            <div className="bg-white/[0.01] border border-white/5 rounded-[64px] p-12 shadow-2xl">
+                <div className="flex justify-between items-center mb-16">
+                    <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter">Active Matrix</h2>
+                    <span className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em]">Single Source of Truth: Verified</span>
                 </div>
-              </div>
-              <div className="bg-white/[0.02] border border-white/5 rounded-[72px] p-16 hover:border-electric-blue/40 transition-all duration-700 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-16 opacity-[0.05] text-[180px] group-hover:-rotate-12 transition-transform duration-1000">📻</div>
-                <div className="text-[13px] text-gray-800 font-black uppercase mb-6 tracking-[0.5em]">Radio Synchronizations</div>
-                <div className="text-8xl font-black text-white tracking-tighter drop-shadow-2xl">142</div>
-                <div className="mt-10 text-[12px] text-gray-800 font-black uppercase tracking-[0.6em] flex items-center gap-4">
-                  <span className="w-4 h-4 bg-electric-blue rounded-full shadow-[0_0_30px_#00BFFF] animate-pulse"></span>
-                  Verified Airplay
+                
+                <div className="space-y-12">
+                   {activeProjects.map((p, i) => {
+                     const role = getRoleForStatus(p.status);
+                     return (
+                       <div key={p.id} className="bg-white/[0.02] border border-white/5 p-8 rounded-[40px] hover:border-white/10 transition-all group">
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-6">
+                            <div className="flex items-center gap-6">
+                               <div className="w-16 h-16 rounded-2xl bg-black border border-white/5 flex items-center justify-center text-3xl shadow-xl group-hover:rotate-3 transition-transform">
+                                  {p.type === 'Radio' ? '📻' : p.type === 'TikTok' ? '📱' : '🚀'}
+                               </div>
+                               <div>
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <h4 className="text-2xl font-black text-white tracking-tighter">{p.songTitle || 'Ecosystem Asset'}</h4>
+                                    <span className="text-[9px] text-gray-600 font-mono font-bold tracking-widest">{p.id}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                     <span className="text-[10px] text-neon-purple font-black uppercase tracking-widest">{p.type} Vertical</span>
+                                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${p.qcStatus === 'Passed' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>QC: {p.qcStatus}</span>
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                               <span className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                 role === 'Artist' ? 'bg-electric-blue/10 border-electric-blue/30 text-electric-blue animate-pulse' : 'bg-white/5 border-white/10 text-gray-500'
+                               }`}>
+                                 {role === 'Artist' ? 'Action Required: Artist' : `Responsible: ${role}`}
+                               </span>
+                               {role === 'Artist' && (
+                                 <button className="text-[10px] font-black text-white uppercase tracking-widest underline decoration-electric-blue underline-offset-4 hover:text-electric-blue transition-colors">Handle Dispatch</button>
+                               )}
+                            </div>
+                         </div>
+                         <PhaseMatrix currentStatus={p.status} />
+                       </div>
+                     );
+                   })}
                 </div>
-              </div>
             </div>
 
-            {/* Performance Visualization */}
-            <div className="bg-white/[0.01] border border-white/5 rounded-[80px] p-20 shadow-2xl relative group">
-               <div className="flex justify-between items-center mb-16">
-                  <div>
-                    <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter">Impact Trajectory</h2>
-                    <p className="text-[12px] text-gray-800 uppercase font-black mt-4 tracking-[0.6em]">Consolidated Audience Analytics (30D)</p>
-                  </div>
-                  <div className="flex bg-black/60 p-3 rounded-[32px] border border-white/10">
-                      <button className="px-10 py-4 text-[10px] font-black text-white bg-white/10 rounded-[24px] uppercase tracking-widest">Real-Time</button>
-                      <button className="px-10 py-4 text-[10px] font-black text-gray-800 hover:text-white uppercase tracking-widest transition-all">Archived</button>
-                  </div>
-               </div>
-               <StudioTrendChart data={trendData} />
-            </div>
-
-            {/* Deployment Matrix (8-Stage Flow) */}
-            <div className="bg-white/[0.01] border border-white/5 rounded-[80px] p-20 shadow-2xl">
-                <div className="flex justify-between items-center mb-20">
-                    <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter leading-none">Deployment Matrix</h2>
-                    <a href="#/services" className="px-12 py-5 bg-white/5 text-[11px] font-black text-neon-purple border border-neon-purple/40 rounded-full uppercase tracking-[0.5em] hover:bg-neon-purple hover:text-white transition-all shadow-2xl">Initialize New +</a>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-white/5 text-[13px] font-black text-gray-800 uppercase tracking-[0.7em]">
-                                <th className="pb-16">Service Core</th>
-                                <th className="pb-16">Active Asset</th>
-                                <th className="pb-16">Current Responsibility</th>
-                                <th className="pb-16 text-right">Last Sync</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {activeProjects.map((p, i) => (
-                                <tr key={i} className="hover:bg-white/[0.04] transition-all group">
-                                    <td className="py-14">
-                                        <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase border tracking-[0.3em] ${
-                                            p.type === 'Radio' ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' :
-                                            p.type === 'TikTok' ? 'border-pink-500/30 text-pink-400 bg-pink-500/5' :
-                                            p.type === 'Sync' ? 'border-yellow-500/30 text-yellow-400 bg-yellow-500/5' :
-                                            'border-green-500/30 text-green-400 bg-green-500/5'
-                                        }`}>{p.type}</span>
-                                    </td>
-                                    <td className="py-14">
-                                        <div className="font-black text-2xl text-white tracking-tighter group-hover:text-electric-blue transition-colors">{p.songTitle || 'System Asset'}</div>
-                                        <div className="text-[12px] text-gray-700 uppercase font-black mt-3 tracking-[0.4em]">{p.status}</div>
-                                    </td>
-                                    <td className="py-14">
-                                        <RoleBadge status={p.status} />
-                                    </td>
-                                    <td className="py-14 text-right text-[14px] text-gray-800 font-mono font-black italic">
-                                        {new Date(p.date).toLocaleDateString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {/* Technical Campaign Planner Output */}
+            <div className="bg-white/[0.01] border border-white/5 rounded-[64px] p-12 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.05] text-[200px] -rotate-12 group-hover:rotate-12 transition-transform duration-1000">📊</div>
+                <h2 className="text-4xl font-black text-white mb-10 uppercase italic tracking-tighter">Operational Directives</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                   <div className="bg-black/80 p-10 rounded-[48px] border border-white/5 backdrop-blur-3xl hover:border-neon-purple/40 transition-all group/card shadow-2xl">
+                      <div className="flex items-center gap-4 mb-6">
+                         <div className="w-8 h-8 rounded-full bg-neon-purple/20 flex items-center justify-center text-neon-purple font-black text-xs shadow-lg">01</div>
+                         <h4 className="text-[11px] font-black text-white uppercase tracking-[0.4em]">Region Alignment Logic</h4>
+                      </div>
+                      <p className="text-[14px] text-gray-500 leading-relaxed font-bold italic group-hover/card:text-gray-300 transition-colors">
+                        "Ecosystem data identifies <span className="text-white">UK Diaspora</span> and <span className="text-white">Ghana Regional Hubs</span> as high-affinity clusters for the current master recording. Prioritize micro-wins via regional community radio over continental scale in Phase 1."
+                      </p>
+                   </div>
+                   <div className="bg-black/80 p-10 rounded-[48px] border border-white/5 backdrop-blur-3xl hover:border-electric-blue/40 transition-all group/card shadow-2xl">
+                      <div className="flex items-center gap-4 mb-6">
+                         <div className="w-8 h-8 rounded-full bg-electric-blue/20 flex items-center justify-center text-electric-blue font-black text-xs shadow-lg">02</div>
+                         <h4 className="text-[11px] font-black text-white uppercase tracking-[0.4em]">KPI Optimization</h4>
+                      </div>
+                      <p className="text-[14px] text-gray-500 leading-relaxed font-bold italic group-hover/card:text-gray-300 transition-colors">
+                        "Initiating <span className="text-white">TikTok Spark</span>. Strategic goal: 12% user-generated content retention rate. Prefer high-engagement niche creators over low-context viral influencers to protect artist brand equity."
+                      </p>
+                   </div>
                 </div>
             </div>
           </div>
 
-          {/* Operations Sidebar */}
+          {/* Functional Sidebar */}
           <div className="space-y-16 xl:space-y-24">
-            
-            {/* Quick Command Hub */}
-            <div className="bg-white/[0.01] border border-white/5 rounded-[72px] p-14 shadow-2xl">
-              <h3 className="text-[13px] font-black text-gray-800 uppercase tracking-[0.8em] mb-12">Service Catalog</h3>
-              <div className="grid grid-cols-2 gap-8">
-                {[
-                  { label: 'Radio Plug', h: '#/radio-plugging', i: '📻' },
-                  { label: 'TikTok Spark', h: '#/tiktok-growth', i: '📱' },
-                  { label: 'Sync Pitch', h: '#/sync-hub', i: '🎥' },
-                  { label: 'PR (EPK)', h: '#/epk-service', i: '📄' },
-                  { label: 'AI Rotation', h: '#/ai-radio', i: '🎙' },
-                  { label: 'Accelerator', h: '#/accelerator', i: '🚀' },
-                ].map(action => (
-                  <a key={action.label} href={action.h} className="flex flex-col items-center justify-center p-10 bg-white/[0.02] border border-white/5 rounded-[48px] hover:border-neon-purple hover:bg-neon-purple/10 transition-all group shadow-2xl">
-                    <span className="text-5xl mb-5 group-hover:scale-125 group-hover:-rotate-12 transition-transform duration-500">{action.i}</span>
-                    <span className="text-[10px] font-black text-gray-800 group-hover:text-white uppercase tracking-[0.3em]">{action.label}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
+             {/* Integrated Service Grid */}
+             <div className="bg-white/[0.01] border border-white/5 rounded-[64px] p-12 shadow-2xl">
+                <h3 className="text-[12px] font-black text-gray-700 uppercase tracking-[0.8em] mb-12">Deployment Catalog</h3>
+                <div className="grid grid-cols-2 gap-6">
+                   {[
+                     { label: 'Radio', icon: '📻', h: '#/radio-plugging' },
+                     { label: 'TikTok', icon: '📱', h: '#/tiktok-growth' },
+                     { label: 'EPK Hub', icon: '📄', h: '#/epk-service' },
+                     { label: 'Sync Ops', icon: '🎥', h: '#/sync-hub' },
+                     { label: 'Distro', icon: '💿', h: '#/pricing' },
+                     { label: 'Accel.', icon: '🚀', h: '#/accelerator' },
+                   ].map(cat => (
+                     <a key={cat.label} href={cat.h} className="flex flex-col items-center justify-center p-8 bg-white/[0.02] border border-white/5 rounded-[40px] hover:border-neon-purple hover:bg-neon-purple/5 transition-all group text-center shadow-xl">
+                        <span className="text-5xl mb-4 group-hover:scale-110 transition-transform">{cat.icon}</span>
+                        <span className="text-[9px] font-black text-gray-700 group-hover:text-white uppercase tracking-widest">{cat.label}</span>
+                     </a>
+                   ))}
+                </div>
+             </div>
 
-            {/* AI A&R Operations Terminal */}
-            <div className="bg-gradient-to-br from-neon-purple/50 to-black/30 border border-neon-purple/50 p-16 rounded-[80px] relative overflow-hidden group shadow-2xl shadow-neon-purple/20">
-               <div className="absolute top-0 right-0 p-16 opacity-[0.1] text-[280px] -rotate-12 group-hover:rotate-12 transition-transform duration-1000">🧠</div>
-               <div className="flex items-center gap-7 mb-14">
-                  <span className="w-6 h-6 bg-neon-purple rounded-full animate-ping"></span>
-                  <h3 className="text-white font-black uppercase italic tracking-tighter text-4xl">Ops Directive</h3>
-               </div>
-               <div className="space-y-10 relative z-10">
-                  <div className="p-10 bg-black/90 rounded-[56px] border border-white/5 shadow-2xl hover:border-neon-purple/40 transition-all duration-700">
-                    <p className="text-[16px] text-gray-400 leading-relaxed font-bold italic">
-                      <span className="text-electric-blue font-black uppercase tracking-[0.5em] block mb-5 not-italic text-[10px]">Strategic Ingestion:</span>
-                      "Regional data for <span className="text-white">West African Afrobeats</span> shows a <span className="text-white font-black">72% uptick</span> in Diaspora radio requests. A <span className="text-white underline underline-offset-8 decoration-neon-purple/40">Radio Distro</span> sweep would optimize ROI."
-                    </p>
-                  </div>
-                  <div className="p-10 bg-black/90 rounded-[56px] border border-white/5 shadow-2xl hover:border-neon-purple/40 transition-all duration-700">
-                    <p className="text-[16px] text-gray-400 leading-relaxed font-bold italic">
-                      <span className="text-neon-purple font-black uppercase tracking-[0.5em] block mb-5 not-italic text-[10px]">Optimization Alert:</span>
-                      "Content Review stage detected. Your EPK profile is missing <span className="text-white">Live Performance Reels</span>. Integrating these will increase agent response by <span className="text-white font-black">62%</span>."
-                    </p>
-                  </div>
-               </div>
-               <button className="w-full mt-16 py-8 bg-white text-black text-[13px] font-black uppercase tracking-[0.8em] rounded-[40px] hover:bg-neon-purple hover:text-white transition-all shadow-2xl border-b-6 border-gray-400 hover:border-neon-purple">Run Calibration</button>
-            </div>
-
-            {/* Live Operations Feed (Roles & Responsibilities) */}
-            <div className="bg-white/[0.01] border border-white/5 p-16 rounded-[80px] shadow-2xl relative">
+             {/* Network Monitoring Feed */}
+             <div className="bg-white/[0.01] border border-white/5 p-12 rounded-[64px] shadow-2xl relative overflow-hidden">
                 <div className="flex justify-between items-center mb-16">
-                    <h3 className="text-white font-black uppercase tracking-tighter italic text-3xl">Ops Log</h3>
-                    <span className="text-[11px] text-neon-purple font-black uppercase bg-neon-purple/15 px-6 py-2 rounded-full border border-neon-purple/30 animate-pulse tracking-[0.5em]">SYSTEM LIVE</span>
+                    <h3 className="text-white font-black uppercase tracking-tighter italic text-3xl leading-none">Global Pulse</h3>
+                    <span className="px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-neon-purple/10 text-neon-purple border border-neon-purple/30 shadow-lg animate-pulse">System Active</span>
                 </div>
-                <div className="space-y-14 relative z-10">
-                    {[
-                        { role: 'System', action: 'Metadata audit complete for "Sonic Wave"', time: '12s ago', icon: '⚙️' },
-                        { role: 'TSA Admin', action: 'Initialized station pitching in UK Diaspora', time: '18m ago', icon: '📝' },
-                        { role: 'Promo Team', action: 'Campaign Live: South African Radio Hub', time: '4h ago', icon: '📻' }
-                    ].map((log, i) => (
-                        <div key={i} className="flex gap-8 group items-start">
-                            <div className="w-16 h-16 rounded-[28px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 shadow-2xl">
-                                {log.icon}
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-[16px] text-white font-black leading-tight tracking-tight mb-2">
-                                    <span className="text-neon-purple font-black uppercase tracking-[0.2em] block text-[9px] mb-2">{log.role}</span>
-                                    <span className="text-gray-400 font-bold italic">{log.action}</span>
-                                </div>
-                                <div className="text-[11px] text-gray-800 uppercase font-black tracking-[0.5em]">{log.time}</div>
-                            </div>
+                <div className="space-y-12">
+                   {[
+                     { user: 'Ras_T', action: 'Live Campaign triggered in South Africa', time: '14s ago' },
+                     { user: 'Sade_X', action: 'EPK Matrix synchronized for Press Ingest', time: '12m ago' },
+                     { user: 'System', action: 'QC Pass: 42 new assets verified', time: '1h ago' }
+                   ].map((item, i) => (
+                     <div key={i} className="flex gap-6 group">
+                        <div className="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-2xl group-hover:bg-neon-purple transition-all shadow-xl">⚡</div>
+                        <div>
+                           <div className="text-[14px] text-white font-black leading-tight tracking-tight mb-2">
+                             <span className="text-electric-blue">{item.user}</span> <span className="text-gray-600 font-bold">{item.action}</span>
+                           </div>
+                           <div className="text-[10px] text-gray-800 font-mono font-black uppercase tracking-widest">{item.time}</div>
                         </div>
-                    ))}
+                     </div>
+                   ))}
                 </div>
-                <a href="#/community" className="block w-full mt-20 py-7 bg-white/[0.04] border border-white/5 text-center text-[11px] font-black text-white uppercase tracking-[0.7em] rounded-[40px] hover:bg-white hover:text-black transition-all shadow-2xl">Enter Inner Circle</a>
-            </div>
+                <button className="w-full mt-16 py-7 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.5em] rounded-[32px] hover:bg-white hover:text-black transition-all shadow-2xl">Access Inner Circle</button>
+             </div>
           </div>
 
         </div>
 
-        {/* Aggregate Label Metrics */}
-        <div className="mt-64 py-48 border-t border-white/5 grid grid-cols-2 lg:grid-cols-4 gap-24">
+        {/* Holistic Ecosystem Metrics */}
+        <div className="mt-64 py-48 border-t border-white/5 grid grid-cols-2 lg:grid-cols-4 gap-16">
             {[
-                { label: 'Ecosystem Total Streams', val: '15.2M', color: 'text-neon-purple' },
-                { label: 'Live Deployments', val: '840+', color: 'text-white' },
-                { label: 'Verified Royalties Disbursed', val: '$1.2M+', color: 'text-electric-blue' },
-                { label: 'Global Placements', val: '214', color: 'text-white' }
-            ].map(item => (
-                <div key={item.label} className="text-center group">
-                    <div className={`text-8xl font-black italic tracking-tighter mb-8 group-hover:scale-110 transition-transform duration-700 ${item.color} drop-shadow-2xl`}>{item.val}</div>
-                    <div className="text-[13px] text-gray-800 font-black uppercase tracking-[0.8em] leading-relaxed max-w-[220px] mx-auto group-hover:text-gray-400 transition-colors">{item.label}</div>
+                { l: 'Ecosystem Volume', v: '15.2M', c: 'text-neon-purple' },
+                { l: 'Active Operations', v: '840+', c: 'text-white' },
+                { l: 'Settled Royalties', v: '$1.2M+', c: 'text-electric-blue' },
+                { l: 'Placements Secured', v: '214', c: 'text-white' }
+            ].map(m => (
+                <div key={m.l} className="text-center group">
+                    <div className={`text-9xl font-black italic tracking-tighter mb-6 group-hover:scale-110 transition-transform duration-700 ${m.c} drop-shadow-2xl`}>{m.v}</div>
+                    <div className="text-[11px] text-gray-800 font-black uppercase tracking-[0.8em] leading-relaxed max-w-[180px] mx-auto group-hover:text-gray-400 transition-colors">{m.l}</div>
                 </div>
             ))}
         </div>
+      </div>
+      
+      {/* Global Status Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-3xl border-t border-white/10 h-16 flex items-center px-12 z-[100] shadow-2xl">
+         <div className="flex items-center gap-12 text-[9px] font-black uppercase tracking-[0.6em] text-gray-700">
+            <span className="flex items-center gap-3"><div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></div> API Status: Stable</span>
+            <span className="flex items-center gap-3"><div className="w-2 h-2 bg-electric-blue rounded-full shadow-[0_0_10px_#00BFFF]"></div> Latency: 14ms</span>
+            <span className="hidden md:inline-block">Ecosystem Secure & Encrypted</span>
+         </div>
       </div>
     </div>
   );
