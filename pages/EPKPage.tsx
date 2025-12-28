@@ -10,7 +10,6 @@ const EPKPage: React.FC<{ user: User | null }> = ({ user }) => {
     pressLinks: '',
     template: 'Afro-Minimal'
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const templates = [
     { id: 'minimal', name: 'Afro-Minimal', img: 'https://picsum.photos/seed/epk1/300/400' },
@@ -20,72 +19,77 @@ const EPKPage: React.FC<{ user: User | null }> = ({ user }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    if (!user) {
+        window.location.hash = '#/login';
+        return;
+    }
     const epks = JSON.parse(localStorage.getItem('tsa-epks') || '[]');
-    epks.push({ ...formData, userEmail: user?.email, artistName: user?.artistName, date: new Date().toISOString(), status: 'Designing' });
+    epks.push({ 
+        ...formData, 
+        userEmail: user?.email, 
+        artistName: user?.artistName, 
+        date: new Date().toISOString(), 
+        status: 'Order Received',
+        type: 'EPK'
+    });
     localStorage.setItem('tsa-epks', JSON.stringify(epks));
+    window.location.hash = `#/checkout?item=${encodeURIComponent('Professional EPK Kit')}&price=${encodeURIComponent('$40')}&type=service`;
   };
 
-  if (isSubmitted) {
-    return (
-        <div className="py-24 text-center">
-            <h1 className="text-4xl font-black text-white">EPK Construction Started! 🎨</h1>
-            <p className="mt-4 text-gray-400">Our design team is building your professional press kit. Check your dashboard in 48 hours for the download link.</p>
-            <a href="#/dashboard" className="mt-8 inline-block px-8 py-3 bg-neon-purple text-white font-bold rounded-full">Dashboard</a>
-        </div>
-    );
-  }
-
   return (
-    <div className="py-12 sm:py-20 bg-brand-bg">
+    <div className="py-12 sm:py-24 bg-brand-bg relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-neon-purple/5 rounded-full blur-[150px] -z-10"></div>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-            <div>
-                <h1 className="text-4xl font-black text-white sm:text-6xl mb-6 uppercase italic">Digital Press <span className="text-neon-purple">& PR Kits</span></h1>
-                <p className="text-xl text-gray-400 mb-10 leading-relaxed">
-                    A professional Electronic Press Kit (EPK) is your passport to festivals, playlists, and interviews. We design high-converting, mobile-ready kits for the modern industry.
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+            <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
+                <h1 className="text-5xl font-black text-white sm:text-8xl mb-8 uppercase italic tracking-tighter leading-none">
+                    Industry <span className="text-neon-purple font-outline-1 text-transparent">Kits</span>
+                </h1>
+                <p className="text-2xl text-gray-500 mb-12 italic leading-relaxed">
+                    A professional Electronic Press Kit (EPK) is your digital passport to festivals, playlists, and media cycles. We build high-fidelity, mobile-ready kits for the elite industry.
                 </p>
                 
-                <div className="space-y-6">
-                    <div className="flex gap-4">
-                        <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center text-electric-blue font-bold">01</div>
-                        <div>
-                            <h4 className="text-white font-bold">Done-For-You Design</h4>
-                            <p className="text-sm text-gray-500">We take your raw assets and turn them into a polished PDF and SmartLink.</p>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    <div className="p-10 bg-white/[0.02] border border-white/5 rounded-[48px] hover:border-neon-purple/30 transition-all duration-700">
+                        <div className="w-16 h-16 bg-neon-purple/10 rounded-3xl flex items-center justify-center text-neon-purple font-black text-xl mb-6 shadow-lg">01</div>
+                        <h4 className="text-white font-black uppercase tracking-widest text-sm mb-4">Strategic Design</h4>
+                        <p className="text-[12px] text-gray-600 font-bold leading-relaxed">We transform your raw assets into a polished, high-converting digital presentation.</p>
                     </div>
-                     <div className="flex gap-4">
-                        <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center text-neon-purple font-bold">02</div>
-                        <div>
-                            <h4 className="text-white font-bold">Industry Standard</h4>
-                            <p className="text-sm text-gray-500">Structured correctly for booking agents and music journalists.</p>
-                        </div>
+                     <div className="p-10 bg-white/[0.02] border border-white/5 rounded-[48px] hover:border-electric-blue/30 transition-all duration-700">
+                        <div className="w-16 h-16 bg-electric-blue/10 rounded-3xl flex items-center justify-center text-electric-blue font-black text-xl mb-6 shadow-lg">02</div>
+                        <h4 className="text-white font-black uppercase tracking-widest text-sm mb-4">A&R Optimized</h4>
+                        <p className="text-[12px] text-gray-600 font-bold leading-relaxed">Structured specifically for the short attention spans of booking agents and label heads.</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 p-8 rounded-[32px]">
-                <h2 className="text-2xl font-bold text-white mb-8">Launch EPK Kit — $40</h2>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <input required placeholder="Short Tagline (e.g. The King of Afro-Jazz)" className="w-full bg-black border border-gray-700 rounded-xl p-4 text-white" value={formData.tagline} onChange={e => setFormData({...formData, tagline: e.target.value})} />
-                    <textarea required rows={4} placeholder="Full Artist Bio..." className="w-full bg-black border border-gray-700 rounded-xl p-4 text-white" value={formData.fullBio} onChange={e => setFormData({...formData, fullBio: e.target.value})} />
-                    <input placeholder="Biggest Achievement to date" className="w-full bg-black border border-gray-700 rounded-xl p-4 text-white" value={formData.topAchievement} onChange={e => setFormData({...formData, topAchievement: e.target.value})} />
+            <div className="bg-white/[0.01] border border-white/5 p-12 lg:p-16 rounded-[64px] shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-right-8 duration-1000">
+                <h2 className="text-4xl font-black text-white mb-10 uppercase italic tracking-tighter">Initialize EPK Build</h2>
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-4">Professional Tagline</label>
+                        <input required placeholder="e.g. The New Voice of Lagos Soul" className="w-full bg-black/60 border border-white/10 rounded-2xl p-5 text-white focus:border-neon-purple outline-none transition-all" value={formData.tagline} onChange={e => setFormData({...formData, tagline: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-4">Extended Artist Bio</label>
+                        <textarea required rows={5} placeholder="Describe your journey, influences, and sonic philosophy..." className="w-full bg-black/60 border border-white/10 rounded-2xl p-5 text-white focus:border-neon-purple outline-none" value={formData.fullBio} onChange={e => setFormData({...formData, fullBio: e.target.value})} />
+                    </div>
                     
-                    <div className="grid grid-cols-1 gap-4">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Template</label>
-                        <div className="flex gap-3">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-6">Visual Identity Template</label>
+                        <div className="grid grid-cols-3 gap-6">
                             {templates.map(t => (
-                                <button type="button" key={t.id} onClick={() => setFormData({...formData, template: t.name})} className={`flex-1 p-2 rounded-xl border-2 transition-all ${formData.template === t.name ? 'border-electric-blue bg-electric-blue/10' : 'border-gray-800 bg-black hover:border-gray-600'}`}>
-                                    <div className="aspect-[3/4] bg-gray-800 rounded-lg mb-2 overflow-hidden">
-                                        <img src={t.img} className="w-full h-full object-cover" alt={t.name} />
+                                <button type="button" key={t.id} onClick={() => setFormData({...formData, template: t.name})} className={`flex flex-col rounded-3xl border-2 transition-all p-2 group ${formData.template === t.name ? 'border-neon-purple bg-neon-purple/5' : 'border-white/5 bg-black/40 hover:border-white/20'}`}>
+                                    <div className="aspect-[3/4] bg-gray-900 rounded-2xl mb-3 overflow-hidden">
+                                        <img src={t.img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt={t.name} />
                                     </div>
-                                    <span className="text-[10px] text-white font-bold uppercase">{t.name}</span>
+                                    <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest text-center py-2">{t.name}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <button className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-neon-purple hover:text-white transition-all">Submit Order</button>
+                    <button className="w-full py-8 bg-white text-black font-black uppercase text-[14px] tracking-[0.7em] rounded-3xl hover:bg-neon-purple hover:text-white transition-all shadow-2xl active:scale-95 border-b-6 border-gray-400 hover:border-neon-purple">Launch $40 Build</button>
                 </form>
             </div>
         </div>

@@ -26,10 +26,10 @@ const PlanCard: React.FC<{
             ))}
         </ul>
         <a 
-          href={isLoggedIn ? "#/dashboard" : "#/login"} 
+          href={isLoggedIn ? `#/checkout?item=${encodeURIComponent(title)}&price=${encodeURIComponent(price)}&type=subscription` : "#/login"} 
           className={`w-full py-4 rounded-xl text-center text-[10px] font-black uppercase tracking-widest ${btnColor}`}
         >
-          {isLoggedIn ? "Manage Plan" : "Join Now"}
+          {isLoggedIn ? "Upgrade Plan" : "Join Now"}
         </a>
     </div>
 );
@@ -91,7 +91,7 @@ const PricingPage: React.FC = () => {
                             Sync Placement Briefs
                         </li>
                     </ul>
-                    <a href="#/accelerator" className="inline-block px-12 py-5 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-neon-purple hover:text-white transition-all">Enroll for $199</a>
+                    <a href={isLoggedIn ? `#/checkout?item=${encodeURIComponent('Music Accelerator')}&price=${encodeURIComponent('$199')}&type=premium` : '#/login'} className="inline-block px-12 py-5 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-neon-purple hover:text-white transition-all">Enroll for $199</a>
                 </div>
                 <div className="flex-1 hidden lg:block grayscale hover:grayscale-0 transition-all duration-700">
                     <img src="https://picsum.photos/seed/accel/800/600" className="w-full rounded-[32px] object-cover" alt="Accelerator" />

@@ -14,65 +14,65 @@ const TikTokGrowthPage: React.FC<TikTokGrowthPageProps> = ({ user }) => {
     concept: '',
     targetAudience: 'Dance/Vibe'
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const tiers = [
-    { id: 'lite', name: 'Lite Spark', price: '£45', creators: '20 Micro-Creators', features: ['Sound Optimization', 'Basic Outreach', '1-Week Campaign'] },
-    { id: 'pro', name: 'Pro Viral', price: '£120', creators: '50 Mid-Tier Creators', features: ['Meme/Dance Concept', 'Creator Management', '2-Week Campaign', 'Usage Analytics'] },
-    { id: 'elite', name: 'Elite Takeover', price: '£350', creators: '100+ Influencers', features: ['Custom Dance Challenge', 'Top Tier Outreach', 'Dedicated Account Manager', 'Viral Guaranteed Retries'] },
+    { id: 'lite', name: 'Lite Spark', price: '$45', creators: '20 Micro-Creators', features: ['Sound Optimization', 'Basic Outreach', '1-Week Campaign'] },
+    { id: 'pro', name: 'Pro Viral', price: '$120', creators: '50 Mid-Tier Creators', features: ['Meme/Dance Concept', 'Creator Management', '2-Week Campaign', 'Usage Analytics'] },
+    { id: 'elite', name: 'Elite Takeover', price: '$350', creators: '100+ Influencers', features: ['Custom Dance Challenge', 'Top Tier Outreach', 'Dedicated Account Manager', 'Viral Guaranteed Retries'] },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTier) return alert('Select a growth tier first.');
-    setIsSubmitted(true);
+    if (!user) {
+        window.location.hash = '#/login';
+        return;
+    }
+
+    const tierObj = tiers.find(t => t.id === selectedTier);
+    
     const growthOrders = JSON.parse(localStorage.getItem('tsa-tiktok-orders') || '[]');
     growthOrders.push({
       ...formData,
-      tier: selectedTier,
+      tier: tierObj?.name,
       userEmail: user?.email,
       date: new Date().toISOString(),
-      status: 'Awaiting Creators'
+      status: 'Order Received',
+      type: 'TikTok'
     });
     localStorage.setItem('tsa-tiktok-orders', JSON.stringify(growthOrders));
+    
+    window.location.hash = `#/checkout?item=${encodeURIComponent(tierObj?.name || 'TikTok Growth')}&price=${encodeURIComponent(tierObj?.price || '$45')}&type=service`;
   };
 
-  if (isSubmitted) {
-    return (
-      <div className="py-24 text-center">
-        <h1 className="text-4xl font-bold text-white">Let's Go Viral! 🚀</h1>
-        <p className="mt-4 text-gray-400">Your TikTok Growth campaign is being queued. We're matching your sound with the best creators.</p>
-        <a href="#/dashboard" className="mt-8 inline-block px-8 py-3 bg-electric-blue text-black font-bold rounded-full">Dashboard</a>
-      </div>
-    );
-  }
-
   return (
-    <div className="py-12 sm:py-20">
+    <div className="py-12 sm:py-24 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-neon-purple/5 rounded-full blur-[120px] -z-10"></div>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold text-white sm:text-6xl">
-            TikTok <span className="text-neon-purple">Sound Growth</span>
+          <h1 className="text-5xl font-black text-white sm:text-7xl uppercase italic tracking-tighter">
+            TikTok <span className="text-neon-purple font-outline-1 text-transparent">Growth</span>
           </h1>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            Turn your track into a viral sound. We push your music to a curated network of micro-influencers to spark a trend.
+          <p className="mt-6 text-xl text-gray-400 max-w-2xl mx-auto italic">
+            Propel your sounds into the zeitgeist. We activate our curated creator network to ignite viral trends around your master recordings.
           </p>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
           {tiers.map((tier) => (
             <div 
               key={tier.id}
               onClick={() => setSelectedTier(tier.id)}
-              className={`p-8 rounded-3xl cursor-pointer border-2 transition-all ${selectedTier === tier.id ? 'border-neon-purple bg-neon-purple/10' : 'border-gray-800 bg-gray-900 hover:border-gray-700'}`}
+              className={`p-10 rounded-[48px] cursor-pointer border-2 transition-all duration-500 relative overflow-hidden group ${selectedTier === tier.id ? 'border-neon-purple bg-neon-purple/10 shadow-neon-purple' : 'border-white/5 bg-white/[0.02] hover:border-white/20'}`}
             >
-              <h3 className="text-2xl font-bold text-white">{tier.name}</h3>
-              <p className="text-electric-blue font-bold text-lg mt-1">{tier.creators}</p>
-              <div className="text-3xl font-bold text-white mt-4">{tier.price}</div>
-              <ul className="mt-6 space-y-2">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.05] text-8xl group-hover:scale-125 transition-transform">📱</div>
+              <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{tier.name}</h3>
+              <p className="text-electric-blue font-black uppercase text-xs tracking-[0.3em] mt-2">{tier.creators}</p>
+              <div className="text-5xl font-black text-white mt-8 tracking-tighter">{tier.price}</div>
+              <ul className="mt-10 space-y-4">
                 {tier.features.map(f => (
-                  <li key={f} className="text-sm text-gray-400 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-neon-purple rounded-full mr-2"></span>{f}
+                  <li key={f} className="text-[11px] font-black uppercase tracking-widest text-gray-500 flex items-center">
+                    <span className="w-2 h-2 bg-neon-purple rounded-full mr-3 shadow-neon-purple"></span>{f}
                   </li>
                 ))}
               </ul>
@@ -81,22 +81,33 @@ const TikTokGrowthPage: React.FC<TikTokGrowthPageProps> = ({ user }) => {
         </div>
 
         {selectedTier && (
-          <div className="mt-16 max-w-2xl mx-auto bg-gray-900/50 p-8 rounded-2xl border border-gray-800">
-            <h2 className="text-2xl font-bold text-white mb-6">Campaign Brief</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-400">Song Title</label>
-                <input required type="text" className="w-full mt-2 bg-black border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-neon-purple" placeholder="Vibe City" value={formData.songTitle} onChange={e => setFormData({...formData, songTitle: e.target.value})} />
+          <div className="mt-24 max-w-3xl mx-auto bg-white/[0.01] backdrop-blur-3xl p-12 rounded-[64px] border border-white/5 shadow-2xl">
+            <h2 className="text-4xl font-black text-white mb-10 uppercase italic tracking-tighter">Campaign Strategy</h2>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-3">Song Identity</label>
+                  <input required type="text" className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-neon-purple outline-none transition-all" placeholder="Track Name" value={formData.songTitle} onChange={e => setFormData({...formData, songTitle: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-3">Audience Segment</label>
+                  <select className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-neon-purple outline-none" value={formData.targetAudience} onChange={e => setFormData({...formData, targetAudience: e.target.value})}>
+                      <option>Dance / High Energy</option>
+                      <option>Chill / Lifestyle</option>
+                      <option>Comedy / Skit</option>
+                      <option>Luxury / Aesthetic</option>
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400">TikTok Sound Link</label>
-                <input required type="url" className="w-full mt-2 bg-black border border-gray-700 rounded-lg p-3 text-white" placeholder="https://vm.tiktok.com/..." value={formData.soundLink} onChange={e => setFormData({...formData, soundLink: e.target.value})} />
+                <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-3">Official Sound Link</label>
+                <input required type="url" className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-neon-purple outline-none" placeholder="https://vm.tiktok.com/..." value={formData.soundLink} onChange={e => setFormData({...formData, soundLink: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400">Concept / Challenge Idea</label>
-                <textarea required rows={3} className="w-full mt-2 bg-black border border-gray-700 rounded-lg p-3 text-white" placeholder="What should people do to your song? (e.g. A fit-check, dance, or meme)" value={formData.concept} onChange={e => setFormData({...formData, concept: e.target.value})} />
+                <label className="block text-[10px] font-black text-gray-700 uppercase tracking-[0.5em] mb-3">Creative Vision / Challenge Concept</label>
+                <textarea required rows={4} className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-neon-purple outline-none" placeholder="Describe the ideal video concept (e.g. A specific dance move or transitions)..." value={formData.concept} onChange={e => setFormData({...formData, concept: e.target.value})} />
               </div>
-              <button className="w-full py-4 bg-neon-purple text-white font-bold rounded-xl hover:shadow-neon-purple transition-all">Launch Growth Campaign</button>
+              <button className="w-full py-7 bg-white text-black font-black uppercase text-[13px] tracking-[0.6em] rounded-3xl hover:bg-neon-purple hover:text-white transition-all shadow-2xl active:scale-95 border-b-6 border-gray-400 hover:border-neon-purple">Proceed to Payment Gateway</button>
             </form>
           </div>
         )}

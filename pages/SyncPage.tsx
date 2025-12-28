@@ -4,97 +4,89 @@ import { User } from './LoginPage';
 
 const SyncPage: React.FC<{ user: User | null }> = ({ user }) => {
   const [view, setView] = useState<'briefs' | 'talents'>('briefs');
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const briefs = [
-    { id: 1, brand: 'Soda Pop Africa', title: 'Summer Campaign', music: 'Upbeat Afrobeats', budget: '$500', deadline: '3 days' },
-    { id: 2, brand: 'Z-Tech Solutions', title: 'App Launch Video', music: 'Ambient Tech-House', budget: '$300', deadline: '1 week' },
-    { id: 3, brand: 'Safari Tours', title: 'Instagram Reel Series', music: 'Authentic Folk/Live Instrumentation', budget: '$150/track', deadline: 'Ongoing' },
+    { id: 1, brand: 'Global Sportswear', title: 'Urban Rhythm Campaign', music: 'High-Energy Afro-Fusion', budget: '$1,200', deadline: '48h' },
+    { id: 2, brand: 'Tech Nova', title: 'App Launch Commercial', music: 'Ambient Tech-House / Melodic', budget: '$800', deadline: '5 days' },
+    { id: 3, brand: 'Adventure Tours', title: 'Documentary Series', music: 'Traditional Folk / Cinematic', budget: '$400/ep', deadline: 'Ongoing' },
   ];
 
-  const handleApply = (briefTitle: string) => {
+  const handleApply = (briefTitle: string, price: string) => {
     if (!user) {
         window.location.hash = '#/login';
         return;
     }
     const apps = JSON.parse(localStorage.getItem('tsa-sync-apps') || '[]');
     apps.push({
-        songTitle: `Proposal for ${briefTitle}`,
-        status: 'Proposal Review',
+        songTitle: `Proposal: ${briefTitle}`,
+        status: 'Order Received',
         date: new Date().toISOString(),
-        userEmail: user.email
+        userEmail: user.email,
+        type: 'Sync'
     });
     localStorage.setItem('tsa-sync-apps', JSON.stringify(apps));
-    setIsSubmitted(true);
+    
+    // Most sync apps are free to apply but we might have a submission fee or a pro-tier
+    window.location.hash = `#/checkout?item=${encodeURIComponent('Sync Pitch: ' + briefTitle)}&price=${encodeURIComponent('$15')}&type=service`;
   };
 
-  if (isSubmitted) {
-    return (
-        <div className="py-24 text-center">
-            <h1 className="text-4xl font-black text-white">Application Sent! 🎥</h1>
-            <p className="mt-4 text-gray-400">Our sync agents will review your proposal against the brand brief. Good luck!</p>
-            <a href="#/dashboard" className="mt-8 inline-block px-8 py-3 bg-electric-blue text-black font-bold rounded-full">Dashboard</a>
-        </div>
-    );
-  }
-
   return (
-    <div className="py-12 sm:py-20 bg-brand-bg">
+    <div className="py-12 sm:py-24 bg-brand-bg relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div>
-                <h1 className="text-4xl font-black text-white uppercase italic">Sync <span className="text-electric-blue">Marketplace</span></h1>
-                <p className="text-gray-500 mt-2">Connect your sound to regional brand campaigns.</p>
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-20 gap-10">
+            <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <h1 className="text-6xl font-black text-white uppercase italic tracking-tighter leading-none">Sync <span className="text-electric-blue font-outline-1 text-transparent">Market</span></h1>
+                <p className="text-2xl text-gray-500 mt-6 italic font-medium max-w-2xl">Connect your master recordings to high-impact brand narratives and cinematic media projects.</p>
             </div>
-            <div className="bg-gray-900 p-1 rounded-xl flex border border-gray-800">
-                <button onClick={() => setView('briefs')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${view === 'briefs' ? 'bg-electric-blue text-black' : 'text-gray-500 hover:text-white'}`}>Current Briefs</button>
-                <button onClick={() => setView('talents')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${view === 'talents' ? 'bg-electric-blue text-black' : 'text-gray-500 hover:text-white'}`}>Sync Catalogs</button>
+            <div className="bg-black/60 p-2 rounded-[32px] flex border border-white/10 backdrop-blur-3xl shadow-2xl">
+                <button onClick={() => setView('briefs')} className={`px-10 py-4 text-[11px] font-black uppercase rounded-[24px] transition-all ${view === 'briefs' ? 'bg-electric-blue text-black' : 'text-gray-700 hover:text-white'}`}>Open Briefs</button>
+                <button onClick={() => setView('talents')} className={`px-10 py-4 text-[11px] font-black uppercase rounded-[24px] transition-all ${view === 'talents' ? 'bg-electric-blue text-black' : 'text-gray-700 hover:text-white'}`}>Catalog Ingest</button>
             </div>
         </div>
 
         {view === 'briefs' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                 {briefs.map(b => (
-                    <div key={b.id} className="bg-gray-900 border border-gray-800 p-8 rounded-[32px] hover:border-electric-blue transition-all group relative overflow-hidden">
-                        <div className="flex justify-between items-start mb-6">
-                            <span className="text-[10px] font-black text-electric-blue uppercase tracking-widest">{b.brand}</span>
-                            <span className="px-2 py-1 bg-white/5 text-gray-500 text-[10px] rounded font-bold">{b.deadline}</span>
+                    <div key={b.id} className="bg-white/[0.01] border border-white/5 p-10 rounded-[56px] hover:border-electric-blue transition-all group relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 p-10 opacity-[0.03] text-9xl group-hover:scale-125 transition-transform">🎥</div>
+                        <div className="flex justify-between items-start mb-10 relative z-10">
+                            <span className="px-5 py-2 bg-electric-blue/10 text-electric-blue text-[10px] font-black uppercase border border-electric-blue/20 rounded-full tracking-widest">{b.brand}</span>
+                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest italic">{b.deadline} rem.</span>
                         </div>
-                        <h3 className="text-2xl font-black text-white mb-2 leading-none">{b.title}</h3>
-                        <p className="text-xs text-gray-500 mb-8">Looking for: <span className="text-gray-300">{b.music}</span></p>
-                        <div className="flex justify-between items-center mt-auto">
-                            <span className="text-xl font-black text-white">{b.budget}</span>
-                            <button onClick={() => handleApply(b.title)} className="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-electric-blue hover:text-black transition-all">Pitch Song</button>
+                        <h3 className="text-3xl font-black text-white mb-4 leading-none tracking-tighter italic">{b.title}</h3>
+                        <p className="text-[12px] text-gray-600 font-bold uppercase tracking-widest mb-10">Target Sound: <span className="text-white italic">{b.music}</span></p>
+                        <div className="flex justify-between items-center relative z-10 pt-8 border-t border-white/5">
+                            <span className="text-3xl font-black text-white italic tracking-tighter">{b.budget}</span>
+                            <button onClick={() => handleApply(b.title, b.budget)} className="px-8 py-4 bg-white text-black text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl hover:bg-electric-blue hover:text-black transition-all shadow-xl active:scale-95">Pitch Asset</button>
                         </div>
                     </div>
                 ))}
             </div>
         ) : (
-            <div className="text-center py-20 bg-gray-900 rounded-[40px] border-2 border-dashed border-gray-800">
-                <div className="mb-6 text-4xl">📀</div>
-                <h3 className="text-2xl font-black text-white mb-4 uppercase">Register your Sync-Ready Catalog</h3>
-                <p className="text-gray-500 mb-8 max-w-sm mx-auto text-sm leading-relaxed">We need your high-quality WAVs, instrumentals, and lyric sheets to pitch to our brand partners effectively.</p>
-                <button className="px-10 py-4 bg-neon-purple text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 transition-transform">Injest My Catalog</button>
+            <div className="text-center py-40 bg-white/[0.01] rounded-[64px] border-2 border-dashed border-white/5 animate-in zoom-in duration-1000">
+                <div className="mb-10 text-8xl opacity-20">📀</div>
+                <h3 className="text-4xl font-black text-white mb-6 uppercase italic tracking-tighter">Sync Catalog Ingestion</h3>
+                <p className="text-gray-500 mb-12 max-w-lg mx-auto text-lg italic leading-relaxed">We require high-fidelity WAVs, isolated instrumentals, and verified lyric sheets to effectively broker deals with our brand partners.</p>
+                <button className="px-14 py-7 bg-neon-purple text-white font-black uppercase text-[12px] tracking-[0.6em] rounded-3xl hover:scale-105 transition-all shadow-neon-purple">Authorize Metadata Upload</button>
             </div>
         )}
 
-        <div className="mt-20 p-10 bg-gray-900 border border-gray-800 rounded-[40px]">
-            <h3 className="text-xl font-black text-white mb-8 uppercase italic">Recent Success Deals</h3>
-            <div className="space-y-6">
-                <div className="flex justify-between items-center border-b border-gray-800 pb-6">
-                    <div>
-                        <span className="text-white font-bold block text-sm">Afro-Electro Project</span>
-                        <span className="text-[10px] text-gray-600 uppercase font-black">Sync with Regional Telecom</span>
+        <div className="mt-32 p-16 bg-white/[0.01] border border-white/5 rounded-[64px] shadow-2xl">
+            <h3 className="text-4xl font-black text-white mb-12 uppercase italic tracking-tighter leading-none">Global Sync Success</h3>
+            <div className="space-y-10">
+                {[
+                    { title: 'Afro-Drill Pulse', context: 'Pan-African Telecom Brand Spot', payout: '$3,200' },
+                    { title: 'Soulful Horizon', context: 'Independent Feature Film Soundtrack', payout: '$1,500' },
+                    { title: 'Desert Wind', context: 'International Travel Documentary', payout: '$850' }
+                ].map((deal, i) => (
+                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-10 gap-6">
+                        <div>
+                            <span className="text-2xl text-white font-black italic tracking-tighter block mb-2">{deal.title}</span>
+                            <span className="text-[11px] text-gray-700 uppercase font-black tracking-[0.5em]">{deal.context}</span>
+                        </div>
+                        <span className="text-4xl font-black text-electric-blue italic tracking-tighter shadow-neon-blue px-6 py-2 bg-electric-blue/5 rounded-2xl border border-electric-blue/20">{deal.payout} Disbursed</span>
                     </div>
-                    <span className="text-neon-purple font-mono font-black text-lg">$1,500 Paid</span>
-                </div>
-                 <div className="flex justify-between items-center border-b border-gray-800 pb-6">
-                    <div>
-                        <span className="text-white font-bold block text-sm">Acoustic Soul Ballad</span>
-                        <span className="text-[10px] text-gray-600 uppercase font-black">Indie Film Soundtrack</span>
-                    </div>
-                    <span className="text-neon-purple font-mono font-black text-lg">$600 Paid</span>
-                </div>
+                ))}
             </div>
         </div>
       </div>

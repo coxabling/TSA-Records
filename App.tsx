@@ -21,6 +21,7 @@ import EPKPage from './pages/EPKPage';
 import CommunityPage from './pages/CommunityPage';
 import SyncPage from './pages/SyncPage';
 import AcceleratorPage from './pages/AcceleratorPage';
+import CheckoutPage from './pages/CheckoutPage';
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
@@ -108,6 +109,14 @@ const App: React.FC = () => {
             return null;
          }
          return <LoginPage onLogin={handleLogin} />;
+    }
+
+    if (path === 'checkout') {
+      if (currentUser) {
+        return <CheckoutPage user={currentUser} />;
+      }
+      window.location.hash = '#/login';
+      return null;
     }
 
     if (path === 'blog' && param) {
